@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Inter } from "next/font/google";
 import "@/styles/globals.css";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
@@ -39,14 +41,18 @@ export default function RootLayout({
       className={`${sourceSerif.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-background font-sans text-ink antialiased">
+      <body className="flex min-h-screen flex-col bg-background font-sans text-ink antialiased">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-input focus:bg-accent focus:px-4 focus:py-2 focus:text-white"
         >
           Skip to main content
         </a>
-        <main id="main-content">{children}</main>
+        <Header />
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );
