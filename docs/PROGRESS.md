@@ -122,19 +122,90 @@ Sections: Hero · Mission & Vision (quoted mission statement in callout) · Why 
 
 ---
 
+---
+
+## Sprint S3a — Chapter Reader core ✅
+*Completed: 2026-05-28*
+
+### Packages added
+- `marked` 18 — markdown → HTML parsing
+- `isomorphic-dompurify` — server + client HTML sanitisation
+- `dotenv` (dev) — `.env.local` loading for standalone seed script
+
+### Files created
+| File | Purpose |
+|------|---------|
+| `packages/db/seed.ts` | Upserts 1 level + 1 book + 3 chapters with realistic institutional prose |
+| `src/modules/content/domain/types.ts` | `Book`, `Chapter`, `ChapterSummary`, `BookWithChapters` types |
+| `src/modules/content/data/queries.ts` | `getPublishedBooks`, `getBookBySlug`, `getChapter` — Supabase queries with sibling prev/next lookup |
+| `src/modules/content/ui/markdown.tsx` | `renderMarkdown()` (marked → DOMPurify strict allowlist) + `SafeMarkdown` — **only** `dangerouslySetInnerHTML` site in codebase |
+
+### Files modified
+| File | Change |
+|------|--------|
+| `src/modules/content/public.ts` | Exports queries, types, and `SafeMarkdown` |
+| `src/app/(reader)/start-reading/[book]/page.tsx` | Book detail: breadcrumb, thesis blockquote, chapter list with ordering / time estimates, mode links |
+| `src/app/(reader)/start-reading/[book]/[chapter]/page.tsx` | Chapter reader: breadcrumb + mode-toggle, Lite banner, `<header>`, `<main>` with `SafeMarkdown`, prev/next card nav, disclaimer |
+
+### Seed data live in Supabase
+- Book: **Household Money Literacy** (`slug: household-money-literacy`, status: published)
+- Chapter 1: Understanding Your Income
+- Chapter 2: Mapping Your Essential Expenses
+- Chapter 3: Building a Simple Monthly Plan
+
+### Key design decisions
+- Lite mode = `?mode=lite` query param → `SafeMarkdown mode="lite"` (smaller prose, no table/code styling) — zero extra JS, purely SSR
+- Chapter URL = `/start-reading/[slug]/[ordering]` (integer) — simpler, no slug collision
+- `getChapter` fetches all sibling summaries in one query to compute prev/next (no N+1)
+- DOMPurify allowlist blocks `script`, `style`, `iframe`, `form`, `input`, `object`
+
+### Verification
+| Check | Result |
+|-------|--------|
+| `pnpm typecheck` | ✅ PASS |
+| `pnpm build` | ✅ PASS — 13 static + 2 dynamic routes |
+| `pnpm db:seed` | ✅ 3 chapters inserted |
+| Git push | ✅ `origin/main` |
+
+---
+
 ## Up Next
 
-### Sprint S3 — Chapter Reader
-- [ ] Seed data: insert `household-money-literacy` book + 3 sample chapters into Supabase
-- [ ] Book detail page: `/start-reading/[book]` — chapter list, book info
-- [ ] Chapter reader: `/start-reading/[book]/[chapter]` — Standard mode (full layout) + Lite mode (text only, ≤50 KB)
-- [ ] Markdown renderer: safe HTML from `body_markdown` (no `dangerouslySetInnerHTML` outside sanitized renderer)
-- [ ] Chapter navigation: prev/next links
+### Sprint S3b — Chapter progress write-through
+- [ ] Anonymous read → writes to IndexedDB under `eili.tools` namespace (key: `chapter_progress`)
+- [ ] Authenticated read → writes to `chapter_progress` table (Supabase, RLS owner-check)
+- [ ] "Continue Where You Left Off" card on `/start-reading` — reads IndexedDB or profile record
 
-### Sprint S4-S6 — Functional Tools
-- [ ] Planner: form with income/essentials/other/savings → remaining balance, IndexedDB state, PDF download
-- [ ] Scorecard: 5 pillars 0–5 sliders → total /25 → band, IndexedDB state, PDF download
-- [ ] 30-Day Reset: week-keyed checklist (4 weeks), idempotent, IndexedDB state, PDF download
+### Sprint S3c — Download mode (PDF)
+- [ ] Playwright route handler at `/api/download/chapter/[book]/[chapter]` — returns branded PDF of one chapter
+- [ ] Wire into Reading Modes section on `/start-reading` and into book detail page
+- [ ] Wire into chapter reader header (Download button)
+
+### S3 Verification checklist (before declaring S3 done)
+- [ ] Lighthouse mobile on `/start-reading/[book]/[chapter]`: perf ≥90, a11y ≥95
+- [ ] Lite chapter transferred bytes ≤50 KB (Chrome DevTools Network, throttled)
+- [ ] Axe: 0 violations on the reader
+- [ ] Anonymous read writes IndexedDB; authenticated read writes `chapter_progress`
+- [ ] RLS: user cannot read another user's `chapter_progress` row
+
+### Sprint S4 — Planner (functional)
+- [ ] Form: income / essentials / other expenses / savings
+- [ ] Output: remaining balance + simple allocation view
+- [ ] State: IndexedDB `eili.tools` namespace; sync to `planner_drafts` on auth
+- [ ] PDF download via route handler
+- [ ] Disclaimer on page
+
+### Sprint S5 — Stability Scorecard (functional)
+- [ ] 5 pillars × 0–5 inputs → total /25
+- [ ] Band display: 0–10 Low / 11–18 Moderate / 19–25 Strong
+- [ ] State: IndexedDB; sync to `scorecards` on auth
+- [ ] PDF download
+
+### Sprint S6 — 30-Day Reset (functional)
+- [ ] 4 weeks × daily checklist (Awareness / Control / Adjustment / Stabilization)
+- [ ] Week-keyed, idempotent
+- [ ] State: IndexedDB; sync to `reset_progress` on auth
+- [ ] PDF download
 
 ### Sprint S7 — Publications Detail
 - [ ] `/publications/[book]` — cover, title, thesis, who should read, key lessons, citation, format buttons
