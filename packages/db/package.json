@@ -1,0 +1,7 @@
+{
+  "name": "@eili/db",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./schema.ts",
+  "types": "./schema.ts"
+}
