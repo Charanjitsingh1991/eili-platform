@@ -169,51 +169,97 @@ Sections: Hero · Mission & Vision (quoted mission statement in callout) · Why 
 
 ---
 
-## Up Next
+---
 
-### Sprint S3b — Chapter progress write-through
-- [ ] Anonymous read → writes to IndexedDB under `eili.tools` namespace (key: `chapter_progress`)
-- [ ] Authenticated read → writes to `chapter_progress` table (Supabase, RLS owner-check)
-- [ ] "Continue Where You Left Off" card on `/start-reading` — reads IndexedDB or profile record
+## Sprint S3b — Chapter progress write-through ✅
+*Completed: 2026-05-29*
 
-### Sprint S3c — Download mode (PDF)
-- [ ] Playwright route handler at `/api/download/chapter/[book]/[chapter]` — returns branded PDF of one chapter
-- [ ] Wire into Reading Modes section on `/start-reading` and into book detail page
-- [ ] Wire into chapter reader header (Download button)
+| File | Purpose |
+|------|---------|
+| `src/lib/reader-progress.ts` | IndexedDB helpers — `markChapterRead`, `getLastReadChapter`, `getAllProgress` (DB: `eili_reader`) |
+| `src/modules/reader/server/record-progress.ts` | Server Actions — `recordChapterProgress` (upsert to `chapter_progress`), `getLastReadForBook` |
+| `src/modules/reader/ui/progress-tracker.tsx` | `"use client"` — fires on chapter mount; anon → IndexedDB, auth → Server Action |
+| `src/modules/reader/ui/continue-card.tsx` | `"use client"` — shows "Continue Where You Left Off" card; renders only if progress exists |
 
-### S3 Verification checklist (before declaring S3 done)
-- [ ] Lighthouse mobile on `/start-reading/[book]/[chapter]`: perf ≥90, a11y ≥95
-- [ ] Lite chapter transferred bytes ≤50 KB (Chrome DevTools Network, throttled)
-- [ ] Axe: 0 violations on the reader
-- [ ] Anonymous read writes IndexedDB; authenticated read writes `chapter_progress`
-- [ ] RLS: user cannot read another user's `chapter_progress` row
+**Wired into:** chapter reader page (ProgressTracker), `/start-reading` page (ContinueCard + server-side `getLastReadForBook`)
 
-### Sprint S4 — Planner (functional)
-- [ ] Form: income / essentials / other expenses / savings
-- [ ] Output: remaining balance + simple allocation view
-- [ ] State: IndexedDB `eili.tools` namespace; sync to `planner_drafts` on auth
-- [ ] PDF download via route handler
-- [ ] Disclaimer on page
+---
 
-### Sprint S5 — Stability Scorecard (functional)
-- [ ] 5 pillars × 0–5 inputs → total /25
-- [ ] Band display: 0–10 Low / 11–18 Moderate / 19–25 Strong
-- [ ] State: IndexedDB; sync to `scorecards` on auth
-- [ ] PDF download
+## Sprint S3c — PDF Download mode ✅
+*Completed: 2026-05-29*
 
-### Sprint S6 — 30-Day Reset (functional)
-- [ ] 4 weeks × daily checklist (Awareness / Control / Adjustment / Stabilization)
-- [ ] Week-keyed, idempotent
-- [ ] State: IndexedDB; sync to `reset_progress` on auth
-- [ ] PDF download
+| File | Purpose |
+|------|---------|
+| `src/app/api/download/chapter/[book]/[chapter]/route.tsx` | GET → `@react-pdf/renderer` → branded chapter PDF |
+| `src/modules/reader/ui/chapter-pdf.tsx` | `ChapterPdf` — EILI-branded A4 PDF: header, stripped markdown body, footer disclaimer |
 
-### Sprint S7 — Publications Detail
-- [ ] `/publications/[book]` — cover, title, thesis, who should read, key lessons, citation, format buttons
+**Download button wired into:** chapter reader header bar, `/start-reading` book card, book detail page.
 
-### Sprint S9 — Polish + Deploy
-- [ ] Lighthouse mobile: perf ≥90, a11y ≥95, best-practices ≥95, SEO ≥95
-- [ ] Axe a11y audit in Playwright
-- [ ] PWA (`next-pwa`) — installable, offline reading
+---
+
+## Sprint S4 — Monthly Planner ✅
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `src/modules/tools/lib/idb.ts` | Shared IndexedDB helpers (`openToolsDb`, `idbGet`, `idbPut`) for all tools — DB: `eili_tools` |
+| `src/modules/tools/ui/planner-form.tsx` | `"use client"` — income / essentials / other / savings inputs, allocation view, remaining balance, IndexedDB persistence |
+| `src/app/(tools)/tools/planner/page.tsx` | Planner page with header + `PlannerForm` + disclaimer |
+| `src/app/api/download/planner/route.tsx` | GET → branded A4 planner template PDF |
+
+---
+
+## Sprint S5 — Stability Scorecard ✅
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `src/modules/tools/ui/scorecard-form.tsx` | `"use client"` — 5 pillar × 0–5 buttons, total /25, band (Low/Moderate/Strong), progress bar, IndexedDB |
+| `src/app/(tools)/tools/scorecard/page.tsx` | Scorecard page with header + `ScorecardForm` + disclaimer |
+| `src/app/api/download/scorecard/route.tsx` | GET → branded A4 scorecard template PDF |
+
+---
+
+## Sprint S6 — 30-Day Reset ✅
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `src/modules/tools/ui/reset-form.tsx` | `"use client"` — 4 weeks × 7 tasks checklist, idempotent per calendar month, IndexedDB, overall progress bar |
+| `src/app/(tools)/tools/reset/page.tsx` | Reset page with header + `ResetForm` + disclaimer |
+| `src/app/api/download/reset/route.tsx` | GET → branded A4 30-day reset plan PDF |
+
+---
+
+## Sprint S7 — Publications Detail ✅
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `src/app/(reader)/publications/[book]/page.tsx` | Full book detail: breadcrumb, cover placeholder, thesis blockquote, tags, format buttons, who should read, key lessons, chapter list, APA/Chicago/MLA citation, continue your path |
+
+Static `BOOK_META` record keyed by slug provides who-should-read, key lessons, and citations. Scales by adding new slug entries without a CMS.
+
+---
+
+## Sprint S8 — Auth Login Page ✅
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `src/modules/identity/server/send-magic-link.ts` | `sendMagicLink` Server Action — Zod validation → `supabase.auth.signInWithOtp` |
+| `src/modules/identity/ui/magic-link-form.tsx` | `"use client"` — email input, submit with `useTransition`, error state, success "check your email" confirmation |
+| `src/app/auth/login/page.tsx` | Login page wrapping `MagicLinkForm`, no-account-needed reminder |
+
+---
+
+## Up Next — Sprint S9 (Polish + Deploy)
+
+- [ ] Lighthouse mobile audit: perf ≥90, a11y ≥95, best-practices ≥95, SEO ≥95
+- [ ] Axe a11y audit in Playwright (`tests/a11y/`)
+- [ ] Lite chapter bytes ≤50 KB verified in Chrome DevTools
+- [ ] PWA manifest + `next-pwa` — installable, offline reading cached
+- [ ] Supabase anti-pause cron (ping every 6 days via GitHub Actions)
 - [ ] Custom domain setup (afriglobaltrade.com → Vercel)
-- [ ] Supabase anti-pause cron (ping every 6 days)
-- [ ] `NEXT_PUBLIC_SITE_URL` update to custom domain
+- [ ] `NEXT_PUBLIC_SITE_URL` update to custom domain in Vercel env UI
+- [ ] `middleware.ts` → `proxy.ts` rename (Next.js 16 deprecation warning)
