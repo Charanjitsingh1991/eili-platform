@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Monitor, Zap, Download, BookOpen, BarChart2, RotateCcw } from "lucide-react";
+import { ContinueCard } from "@/modules/reader/public";
+import { getLastReadForBook } from "@/modules/reader/public";
+import { getBookBySlug } from "@/modules/content/public";
 
 export const metadata = {
   title: "Start Reading",
@@ -7,27 +10,29 @@ export const metadata = {
     "Read Household Money Literacy — Public Edition free, with no account required. Available in Standard, Lite, and Download modes.",
 };
 
+const BOOK_SLUG = "household-money-literacy";
+
 const readingModes = [
   {
     icon: Monitor,
     title: "Standard",
     desc: "Full text with comfortable reading layout. Best on Wi-Fi.",
     cta: "Read Standard",
-    href: "/start-reading/household-money-literacy/chapter-1",
+    href: `/start-reading/${BOOK_SLUG}/1`,
   },
   {
     icon: Zap,
     title: "Lite",
     desc: "Text only, optimised for low data. Under 50 KB per chapter.",
     cta: "Read Lite",
-    href: "/start-reading/household-money-literacy/chapter-1?mode=lite",
+    href: `/start-reading/${BOOK_SLUG}/1?mode=lite`,
   },
   {
     icon: Download,
     title: "Download",
     desc: "Save selected chapters as a small PDF for offline reading.",
     cta: "Download PDF",
-    href: "/start-reading/household-money-literacy/chapter-1?mode=download",
+    href: `/api/download/chapter/${BOOK_SLUG}/1`,
   },
 ];
 
@@ -56,7 +61,12 @@ const actionTools = [
   { href: "/tools/reset", icon: RotateCcw, label: "30-Day Reset" },
 ];
 
-export default function StartReadingPage() {
+export default async function StartReadingPage() {
+  const book = await getBookBySlug(BOOK_SLUG);
+  const serverOrdering = book
+    ? await getLastReadForBook(book.id).then((r) => r?.ordering ?? null).catch(() => null)
+    : null;
+
   return (
     <>
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -70,13 +80,16 @@ export default function StartReadingPage() {
             use Lite mode for low data, or download for offline use.
           </p>
           <Link
-            href="/start-reading/household-money-literacy/chapter-1"
+            href={`/start-reading/${BOOK_SLUG}/1`}
             className="inline-flex h-12 items-center justify-center rounded-card bg-accent px-8 font-sans text-base font-medium text-white transition-colors hover:bg-accent/90 focus-ring"
           >
             Start Reading Free Book
           </Link>
         </div>
       </section>
+
+      {/* ── Continue Card (client-side — renders only if progress exists) ────── */}
+      <ContinueCard bookSlug={BOOK_SLUG} serverOrdering={serverOrdering} />
 
       {/* ── Reading Modes ────────────────────────────────────────────────── */}
       <section className="border-b border-border px-4 py-14">
@@ -134,13 +147,13 @@ export default function StartReadingPage() {
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/start-reading/household-money-literacy/chapter-1"
+                href={`/start-reading/${BOOK_SLUG}/1`}
                 className="inline-flex h-11 items-center justify-center rounded-card bg-accent px-6 font-sans text-sm font-medium text-white transition-colors hover:bg-accent/90 focus-ring"
               >
                 Read Now
               </Link>
               <Link
-                href="/start-reading/household-money-literacy/chapter-1?mode=download"
+                href={`/api/download/chapter/${BOOK_SLUG}/1`}
                 className="inline-flex h-11 items-center justify-center rounded-card border border-border px-6 font-sans text-sm font-medium text-ink transition-colors hover:bg-border/30 focus-ring"
               >
                 Download PDF
@@ -222,7 +235,7 @@ export default function StartReadingPage() {
         <div className="mx-auto max-w-xl">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
-              href="/start-reading/household-money-literacy/chapter-1"
+              href={`/start-reading/${BOOK_SLUG}/1`}
               className="inline-flex h-12 min-w-[180px] items-center justify-center rounded-card bg-accent px-8 font-sans text-base font-medium text-white transition-colors hover:bg-accent/90 focus-ring"
             >
               Read Free Book

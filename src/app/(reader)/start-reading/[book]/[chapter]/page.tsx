@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Clock, List } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Download, List } from "lucide-react";
 import { getChapter } from "@/modules/content/public";
 import { SafeMarkdown } from "@/modules/content/ui/markdown";
+import { ProgressTracker } from "@/modules/reader/public";
+import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
 interface Props {
@@ -31,6 +33,10 @@ export default async function ChapterPage({ params, searchParams }: Props) {
 
   const data = await getChapter(bookSlug, ordering);
   if (!data) notFound();
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
 
   const isLite = modeParam === "lite";
   const altModeHref = isLite
@@ -84,6 +90,14 @@ export default async function ChapterPage({ params, searchParams }: Props) {
             >
               {altModeLabel}
             </Link>
+            <a
+              href={`/api/download/chapter/${bookSlug}/${ordering}`}
+              className="flex items-center gap-1 font-sans text-xs text-ink-secondary hover:text-ink focus-ring rounded"
+              aria-label="Download chapter as PDF"
+            >
+              <Download size={14} aria-hidden />
+              <span className="hidden sm:inline">PDF</span>
+            </a>
             <Link
               href={`/start-reading/${bookSlug}`}
               className="flex items-center gap-1 font-sans text-xs text-ink-secondary hover:text-ink focus-ring rounded"
@@ -237,6 +251,15 @@ export default async function ChapterPage({ params, searchParams }: Props) {
           advice.
         </p>
       </div>
+
+      {/* ── Progress tracker (no UI — side-effect only) ──────────────────── */}
+      <ProgressTracker
+        bookSlug={bookSlug}
+        bookId={data.bookId}
+        chapterId={data.id}
+        chapterOrdering={ordering}
+        isAuthenticated={isAuthenticated}
+      />
     </>
   );
 }
