@@ -253,13 +253,102 @@ Static `BOOK_META` record keyed by slug provides who-should-read, key lessons, a
 
 ---
 
-## Up Next — Sprint S9 (Polish + Deploy)
+---
 
-- [ ] Lighthouse mobile audit: perf ≥90, a11y ≥95, best-practices ≥95, SEO ≥95
-- [ ] Axe a11y audit in Playwright (`tests/a11y/`)
-- [ ] Lite chapter bytes ≤50 KB verified in Chrome DevTools
-- [ ] PWA manifest + `next-pwa` — installable, offline reading cached
-- [ ] Supabase anti-pause cron (ping every 6 days via GitHub Actions)
-- [ ] Custom domain setup (afriglobaltrade.com → Vercel)
-- [ ] `NEXT_PUBLIC_SITE_URL` update to custom domain in Vercel env UI
-- [ ] `middleware.ts` → `proxy.ts` rename (Next.js 16 deprecation warning)
+## Sprint S9a — Compliance + Consent ✅
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `src/app/(marketing)/privacy/page.tsx` | Privacy Policy — 8 sections, amber "subject to legal review" banner, cookie inventory, data retention, third-party processors |
+| `src/app/(marketing)/terms/page.tsx` | Terms of Use — 10 sections, nature-of-service disclaimer, permitted use, IP, liability |
+| `src/lib/consent.ts` | `getConsentCookie`, `setConsentCookie`, `hasAnalyticsConsent` — first-party `eili_consent` cookie, SameSite=Lax, 365-day expiry |
+| `src/lib/analytics.ts` | Updated to use `hasAnalyticsConsent` — PostHog **never** initialises until Accept is clicked |
+| `src/components/consent/consent-banner.tsx` | Fixed-bottom consent banner: hidden if cookie present, focus moves to Accept on show, two buttons (Decline / Accept), links to Privacy Policy |
+| `src/app/layout.tsx` | `ConsentBanner` wired into root layout |
+
+Footer already had `/privacy` and `/terms` links — no change needed.
+
+---
+
+## Sprint S9b — Auth decision ✅
+*Completed: 2026-05-29*
+
+**Google OAuth deferred to Phase 2.** Documented in `docs/adr-notes.md`:
+- Magic link covers 100% of Phase 1 sign-in use case (accounts are optional).
+- Google verified OAuth consent screen takes days–weeks to clear review.
+- Avoids mid-sprint delay before public launch.
+
+---
+
+## Sprint S9c — Performance + SEO ✅ (code complete; manual Lighthouse/Axe run required)
+*Completed: 2026-05-29*
+
+| Item | Status |
+|------|--------|
+| JSON-LD `Book` schema on `/publications/[book]` | ✅ Shipped — `@context: schema.org/Book`, author, publisher, url, isAccessibleForFree, datePublished |
+| `themeColor` moved to `generateViewport` export | ✅ — fixed Next 15+ warning across all routes |
+| Lighthouse mobile ≥90/95/95/95 on 6 routes | ⏳ Manual run required (see verification checklist below) |
+| Axe: 0 violations on 6 routes | ⏳ Manual run required |
+| Lite chapter ≤50 KB, Standard ≤250 KB | ⏳ Verify in Chrome DevTools Network (cache disabled, Fast 3G) |
+
+---
+
+## Sprint S9d — PWA ✅ (partial — service worker deferred)
+*Completed: 2026-05-29*
+
+| Item | Status |
+|------|--------|
+| `public/manifest.json` | ✅ name, short_name, theme_color, icons, shortcuts, display: standalone |
+| `public/favicon.svg` | ✅ EILI teal "E" icon |
+| `public/icons/icon-192.svg` | ✅ |
+| `public/icons/icon-512.svg` | ✅ |
+| Manifest + apple-web-app meta in `src/app/layout.tsx` | ✅ |
+| Service worker (offline precache) | ❌ Deferred — `@serwist/next` webpack plugin hard-fails against Next 16 Turbopack. ADR logged. Revisit when `@serwist/turbopack` stabilises. |
+
+---
+
+## Sprint S9e — Operations ✅ (infra files complete; DNS/domain is manual)
+*Completed: 2026-05-29*
+
+| File | Purpose |
+|------|---------|
+| `docs/deployment.md` | Env vars table, first-time Supabase/Resend/Vercel/Cloudflare setup, migration procedure, rollback steps, secrets inventory, pre-launch checklist |
+| `docs/adr-notes.md` | Backfilled: Next 15→16, Sentry deferral, @react-pdf/renderer, Source Serif 4, Google OAuth deferral, serwist deferral, proxy.ts rename, consent cookie choice |
+| `src/proxy.ts` | Renamed from `middleware.ts`; exported function renamed `proxy` (Next 16 requirement) |
+| `workers/supabase-ping/index.js` | Cloudflare Worker — scheduled `fetch` to Supabase REST health endpoint |
+| `workers/supabase-ping/wrangler.toml` | Cron: `0 0 */6 * *` (every 6 days). Deploy: `wrangler secret put SUPABASE_URL && wrangler secret put SUPABASE_ANON_KEY && wrangler deploy` |
+
+**Remaining manual steps:**
+1. Cloudflare DNS: add CNAME `@` → Vercel DNS value for `afriglobaltrade.com`
+2. Vercel: add custom domain, wait for SSL provisioning
+3. Update `NEXT_PUBLIC_SITE_URL` in Vercel env to `https://afriglobaltrade.com`
+4. Update Supabase Auth → URL Configuration → Site URL + Redirect URLs
+5. Deploy Cloudflare Worker: `wrangler deploy` from `workers/supabase-ping/`
+6. Replace placeholder emails (`privacy@eili.org`, `legal@eili.org`) before public launch
+7. Legal review of Privacy Policy and Terms of Use
+
+---
+
+## Phase 1 — "When Done" Verification Checklist
+
+| Check | Status |
+|-------|--------|
+| Build: 0 errors, 0 warnings | ✅ 21 routes |
+| TypeScript strict: no errors | ✅ |
+| Lighthouse mobile perf ≥90 | ⏳ Run manually |
+| Lighthouse a11y ≥95 | ⏳ Run manually |
+| Lighthouse best-practices ≥95 | ⏳ Run manually |
+| Lighthouse SEO ≥95 | ⏳ Run manually |
+| Axe: 0 violations | ⏳ Run manually |
+| PostHog: 0 events before consent click | ✅ Consent gate in code; verify in DevTools Network |
+| PWA installable (manifest + icons) | ✅ Manifest shipped; SW deferred — see ADR |
+| Lite chapter ≤50 KB | ⏳ Verify in DevTools |
+| `afriglobaltrade.com` loads over HTTPS | ⏳ DNS config manual |
+| Supabase anti-pause Worker deployed | ⏳ `wrangler deploy` manual |
+| Privacy Policy + Terms linked from footer | ✅ |
+| All deviations in adr-notes.md | ✅ 8 entries |
+| Secrets inventory in deployment.md | ✅ |
+| Google OAuth decision documented | ✅ Deferred Phase 2 |
+| JSON-LD Book schema | ✅ |
+| `proxy.ts` rename complete | ✅ |
