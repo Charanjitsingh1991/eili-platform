@@ -1,2 +1,3 @@
 // Identity module public API
-export {};
+export { sendMagicLink } from "./server/send-magic-link";
+export { MagicLinkForm } from "./ui/magic-link-form";
