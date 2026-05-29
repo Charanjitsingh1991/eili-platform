@@ -1,0 +1,39 @@
+{
+  "name": "EILI — Economic & Industrial Literacy Institute",
+  "short_name": "EILI",
+  "description": "Build financial stability with simple systems. Read, plan, and track your money.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#0F4C5C",
+  "orientation": "portrait-primary",
+  "categories": ["education", "finance"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Start Reading",
+      "url": "/start-reading",
+      "description": "Read the free Household Money Literacy book"
+    },
+    {
+      "name": "Monthly Planner",
+      "url": "/tools/planner",
+      "description": "Plan your monthly income and expenses"
+    }
+  ]
+}

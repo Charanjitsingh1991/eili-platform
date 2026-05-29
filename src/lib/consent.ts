@@ -1,34 +1,32 @@
-const CONSENT_KEY = "eili.consent";
+/** Cookie name for consent — first-party, SameSite=Lax, 365-day expiry */
+const COOKIE_NAME = "eili_consent";
 
-export type ConsentState = {
-  analytics: boolean;
-  updatedAt: string;
-};
+export type ConsentChoice = "accepted" | "declined";
 
-export function getConsent(): ConsentState | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = localStorage.getItem(CONSENT_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as ConsentState;
-  } catch {
-    return null;
-  }
+/** Read the consent cookie (client-side only). Returns null if not yet decided. */
+export function getConsentCookie(): ConsentChoice | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${COOKIE_NAME}=`));
+  if (!match) return null;
+  const value = match.split("=")[1];
+  if (value === "accepted" || value === "declined") return value;
+  return null;
 }
 
-export function setConsent(analytics: boolean): void {
-  if (typeof window === "undefined") return;
-
-  const state: ConsentState = {
-    analytics,
-    updatedAt: new Date().toISOString(),
-  };
-
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(state));
+/** Write the consent cookie — 365-day, SameSite=Lax, Secure in production. */
+export function setConsentCookie(choice: ConsentChoice): void {
+  if (typeof document === "undefined") return;
+  const maxAge = 365 * 24 * 60 * 60; // seconds
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:"
+      ? "; Secure"
+      : "";
+  document.cookie = `${COOKIE_NAME}=${choice}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
 }
 
-export function hasConsented(): boolean {
-  const consent = getConsent();
-  return consent?.analytics === true;
+/** True only when the user has explicitly accepted analytics. */
+export function hasAnalyticsConsent(): boolean {
+  return getConsentCookie() === "accepted";
 }

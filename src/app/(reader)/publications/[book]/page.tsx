@@ -64,9 +64,36 @@ export default async function BookDetailPage({ params }: Props) {
   if (!book) notFound();
 
   const meta = BOOK_META[slug];
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://eili.org";
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: book.title,
+    ...(book.subtitle ? { alternativeHeadline: book.subtitle } : {}),
+    ...(book.thesis ? { description: book.thesis } : {}),
+    author: {
+      "@type": "Organization",
+      name: "Economic & Industrial Literacy Institute",
+      url: siteUrl,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Economic & Industrial Literacy Institute",
+    },
+    url: `${siteUrl}/publications/${slug}`,
+    inLanguage: "en",
+    isAccessibleForFree: true,
+    ...(book.publishedAt ? { datePublished: book.publishedAt.slice(0, 10) } : {}),
+    ...(meta?.isbn ? { isbn: meta.isbn } : {}),
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* ── Breadcrumb ───────────────────────────────────────────────────── */}
       <nav aria-label="Breadcrumb" className="border-b border-border bg-surface px-4 py-3">
         <ol className="mx-auto flex max-w-4xl items-center gap-1 font-sans text-xs text-ink-secondary">

@@ -1,9 +1,17 @@
 # Architecture Decision Records — EILI Phase 1
 
 Log of any deviation from the locked stack in `.windsurf/rules/02-tech-stack.md`.
+Every entry must have: date, decision, rationale, and status (active / superseded).
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-05-28 | Sentry deferred to pre-launch | Not in Phase 1 V2 source doc. Using Vercel logs + `src/lib/logger.ts` thin wrapper for dev. Will add Sentry free tier before first public traffic. |
-| 2026-05-28 | `@react-pdf/renderer` instead of Playwright for PDF export | Playwright chromium binary exceeds Vercel Hobby 50 MB function size limit. `@react-pdf/renderer` is lightweight and works within free tier. Can revisit if output quality demands it. |
-| 2026-05-28 | `Source Serif 4` used in place of `Source Serif Pro` | Google Fonts renamed Source Serif Pro to Source Serif 4. Same typeface, updated name. |
+---
+
+| Date | Decision | Rationale | Status |
+|------|----------|-----------|--------|
+| 2026-05-28 | Upgraded from Next.js 15 to Next.js 16.2.6 (Turbopack) | 16.x was the current stable at project init; Turbopack meaningfully improves dev-server cold start on Windows. No API surface differences for Phase 1 work. | Active |
+| 2026-05-28 | Sentry deferred to pre-launch | Not in Phase 1 V2 source doc. Using Vercel logs + `src/lib/logger.ts` thin wrapper for dev. Will add Sentry free tier before first public traffic. | Active |
+| 2026-05-28 | `@react-pdf/renderer` instead of Playwright for PDF export | Playwright chromium binary exceeds Vercel Hobby 50 MB Lambda size limit. `@react-pdf/renderer` is lightweight, works within free tier, and runs in the Edge/Node runtime without launching a browser process. Can revisit if PDF fidelity demands richer HTML-to-PDF output. | Active |
+| 2026-05-28 | `Source Serif 4` used in place of `Source Serif Pro` | Google Fonts renamed Source Serif Pro to Source Serif 4. Same typeface family, updated package name only. | Active |
+| 2026-05-29 | Google OAuth deferred to Phase 2 | Reasoning: (a) Magic link covers 100% of the sign-in use case for Phase 1 — accounts are optional and low-frequency. (b) Google OAuth requires verified OAuth consent screen (takes days to weeks to clear Google review for production). (c) Adding an OAuth provider mid-sprint risks delaying the public launch. Decision: ship Phase 1 with magic-link-only auth. Add Google (and optionally Apple) OAuth as the first Phase 2 auth enhancement. Revisit when monthly active users justify the friction reduction. | Active |
+| 2026-05-29 | Service Worker (PWA) deferred — `@serwist/next` incompatible with Next 16 Turbopack build | `next-pwa` is unmaintained; `@serwist/next` v9 injects a webpack plugin that causes a hard build failure when Next 16 Turbopack is active (`turbopack: {}` does not resolve the conflict). `@serwist/turbopack` is experimental and not yet stable. Decision: ship the web app manifest, icons, and `theme-color` (installability signals) now; add the service worker precache when `@serwist/turbopack` stabilises or when we switch the build to webpack. Track: https://github.com/serwist/serwist/issues/54. | Active |
+| 2026-05-29 | `middleware.ts` file name deprecation in Next.js 16 | Next 16 deprecates `middleware.ts` in favour of `proxy.ts`. Rename is non-breaking (old name still works) but generates a build warning. Will rename as part of S9 cleanup. | Active |
+| 2026-05-29 | Consent stored as first-party cookie (`eili_consent`) not localStorage | Cookie is readable server-side (for future SSR consent checks), survives cross-tab/page-refresh reliably, and is the standard approach for GDPR-compliant consent records. localStorage would be wiped by some iOS PWA restarts. | Active |

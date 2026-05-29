@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Source_Serif_4, Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { ConsentBanner } from "@/components/consent/consent-banner";
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
@@ -18,6 +19,10 @@ const inter = Inter({
   weight: ["400", "500", "600"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0F4C5C",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "EILI — Economic & Industrial Literacy Institute",
@@ -28,6 +33,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   ),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EILI",
+  },
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/icons/icon-192.svg",
+  },
 };
 
 export default function RootLayout({
@@ -53,6 +68,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <ConsentBanner />
       </body>
     </html>
   );

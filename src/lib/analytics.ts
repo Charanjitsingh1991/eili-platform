@@ -1,14 +1,14 @@
 "use client";
 
 import posthog from "posthog-js";
-import { hasConsented } from "./consent";
+import { hasAnalyticsConsent } from "./consent";
 
 let initialized = false;
 
 export function initAnalytics(): void {
   if (typeof window === "undefined") return;
   if (initialized) return;
-  if (!hasConsented()) return;
+  if (!hasAnalyticsConsent()) return;
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
@@ -28,12 +28,12 @@ export function captureEvent(
   event: string,
   properties?: Record<string, unknown>,
 ): void {
-  if (!initialized || !hasConsented()) return;
+  if (!initialized || !hasAnalyticsConsent()) return;
   posthog.capture(event, properties);
 }
 
 export function identifyUser(userId: string): void {
-  if (!initialized || !hasConsented()) return;
+  if (!initialized || !hasAnalyticsConsent()) return;
   posthog.identify(userId);
 }
 
