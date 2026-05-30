@@ -34,7 +34,7 @@ export default function TermsPage() {
               By accessing or using this Platform you agree to be bound by these Terms.
               If you do not agree, please do not use the Platform. Use of the Platform
               is governed by these Terms and our{" "}
-              <a href="/privacy" className="text-accent hover:underline">Privacy Policy</a>.
+              <a href="/privacy" className="text-accent underline hover:no-underline">Privacy Policy</a>.
             </p>
           </section>
 

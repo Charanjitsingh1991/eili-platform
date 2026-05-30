@@ -32,7 +32,7 @@ export default function LoginPage() {
           Reading and all tools are available without an account.{" "}
           <Link
             href="/start-reading"
-            className="text-accent hover:underline focus-ring rounded"
+            className="text-accent underline hover:no-underline focus-ring rounded"
           >
             Start reading free
           </Link>

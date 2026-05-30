@@ -111,17 +111,17 @@ export default function PublicationsPage() {
             {coreBooks.map((book) => (
               <div
                 key={book.title + book.subtitle}
-                className={`flex flex-col rounded-card border p-6 ${book.comingSoon ? "border-border bg-background opacity-60" : "border-border bg-surface"}`}
+                className={`flex flex-col rounded-card border p-6 ${book.comingSoon ? "border-border bg-background" : "border-border bg-surface"}`}
               >
                 <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-input bg-accent/10 px-2 py-0.5 font-sans text-xs font-medium text-accent">
+                  <span className={`rounded-input px-2 py-0.5 font-sans text-xs font-medium ${book.comingSoon ? "bg-border text-ink-secondary" : "bg-accent/10 text-accent"}`}>
                     {book.tag}
                   </span>
                   <span className="font-sans text-xs text-ink-secondary">
                     {book.level} · {book.audience}
                   </span>
                 </div>
-                <h3 className="mb-1 font-serif text-lg font-semibold text-ink">
+                <h3 className={`mb-1 font-serif text-lg font-semibold ${book.comingSoon ? "text-ink-secondary" : "text-ink"}`}>
                   {book.title}
                 </h3>
                 <p className="mb-1 font-sans text-sm text-ink-secondary">
