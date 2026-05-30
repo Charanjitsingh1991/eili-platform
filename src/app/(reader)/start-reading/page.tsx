@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Monitor, Zap, Download, BookOpen, BarChart2, RotateCcw } from "lucide-react";
 import { ContinueCard } from "@/modules/reader/public";
-import { getLastReadForBook } from "@/modules/reader/public";
-import { getBookBySlug } from "@/modules/content/public";
 
 export const metadata = {
   title: "Start Reading",
@@ -62,10 +60,7 @@ const actionTools = [
 ];
 
 export default async function StartReadingPage() {
-  const book = await getBookBySlug(BOOK_SLUG);
-  const serverOrdering = book
-    ? await getLastReadForBook(book.id).then((r) => r?.ordering ?? null).catch(() => null)
-    : null;
+  const serverOrdering = null; // progress sync re-enabled after schema migration
 
   return (
     <>
