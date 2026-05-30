@@ -149,7 +149,7 @@ export default function PrivacyPage() {
             <h2 className="mb-3 font-serif text-xl font-semibold text-ink">7. Contact</h2>
             <p>
               For privacy-related queries, data requests, or to withdraw consent, contact
-              us at: <strong>privacy@eili.org</strong> (placeholder — update before launch).
+              us at: <strong>privacy@afriglobaltrade.com</strong>.
             </p>
           </section>
 

@@ -64,7 +64,7 @@ docs/            — Architecture decision records
 
 ## Tech Stack
 
-Next.js 15 · React 19 · TypeScript strict · Tailwind CSS · shadcn/ui · Supabase (Postgres + Auth) · Drizzle ORM · Vitest · Playwright
+Next.js 16 · React 19 · TypeScript strict · Tailwind CSS · shadcn/ui · Supabase (Postgres + Auth) · Drizzle ORM · Vitest · Playwright
 
 ## License
 

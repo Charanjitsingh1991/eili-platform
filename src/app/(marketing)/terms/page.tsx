@@ -132,7 +132,7 @@ export default function TermsPage() {
             <h2 className="mb-3 font-serif text-xl font-semibold text-ink">10. Contact</h2>
             <p>
               Questions about these Terms:{" "}
-              <strong>legal@eili.org</strong> (placeholder — update before launch).
+              <strong>legal@afriglobaltrade.com</strong>.
             </p>
           </section>
 

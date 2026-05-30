@@ -5,8 +5,8 @@
 - Node.js ≥ 20, pnpm ≥ 9
 - Vercel account (Hobby or Pro)
 - Supabase project (free tier)
-- Cloudflare account (free tier, for DNS + cron Worker)
-- Resend account (free tier, for email)
+- Hostinger account with active hosting plan (for DNS, email, and cron)
+- Resend account (free tier, for transactional email)
 - PostHog Cloud EU account (free tier, optional)
 
 ---
@@ -53,13 +53,44 @@ Copy `.env.example` (if present) to `.env.local` and fill in values. This file i
    - Site URL: `https://afriglobaltrade.com`
    - Redirect URLs: `https://afriglobaltrade.com/auth/callback`
 
-### 2. Resend
+### 2. Email setup (Hostinger mailboxes + Resend sending)
 
-1. Create account at [resend.com](https://resend.com).
-2. Verify your sending domain (or use the sandbox for testing).
-3. Copy the API key into Vercel env vars.
-4. In Supabase → Auth → SMTP Settings, configure Resend as the SMTP provider:
-   - Host: `smtp.resend.com`, Port: `465`, User: `resend`, Password: `<RESEND_API_KEY>`
+#### 2a. Hostinger mailboxes (inbound)
+
+Create these four mailboxes in Hostinger hPanel → Email → Email Accounts for `afriglobaltrade.com`:
+
+| Mailbox | Purpose |
+|---------|--------|
+| `auth@afriglobaltrade.com` | Magic link sender (Resend sender address) |
+| `privacy@afriglobaltrade.com` | Privacy / data requests |
+| `legal@afriglobaltrade.com` | Legal / terms queries |
+| `hello@afriglobaltrade.com` | General contact |
+
+#### 2b. Resend domain verification (outbound sending)
+
+1. Create account at [resend.com](https://resend.com) and add domain `afriglobaltrade.com`.
+2. Resend will show DNS records to add. In Hostinger hPanel → Domains → DNS Zone Editor add:
+   - **SPF** — `TXT` on `@`: merge Hostinger's default SPF with Resend's include.
+     > ⚠️ **SPF merge warning:** There must be exactly **one** `TXT` SPF record on `@`.
+     > Combine all `include:` values into a single record, e.g.:
+     > `v=spf1 include:_spf.hostinger.com include:amazonses.com ~all`
+     > (exact Resend include shown in Resend dashboard — do not add a second SPF record)
+   - **DKIM** — 3 × `CNAME` records as shown by Resend.
+   - **DMARC** — `TXT` on `_dmarc`: `v=DMARC1; p=none; rua=mailto:hello@afriglobaltrade.com`
+3. Copy the Resend API key into Vercel env vars as `RESEND_API_KEY`.
+
+#### 2c. Supabase Custom SMTP
+
+In Supabase → Authentication → Email → SMTP Settings:
+
+| Field | Value |
+|-------|-------|
+| Host | `smtp.resend.com` |
+| Port | `465` (or `587`) |
+| Username | `resend` |
+| Password | `<RESEND_API_KEY>` |
+| Sender name | `EILI` |
+| Sender email | `auth@afriglobaltrade.com` |
 
 ### 3. Vercel
 
@@ -72,17 +103,21 @@ Copy `.env.example` (if present) to `.env.local` and fill in values. This file i
    vercel --prod
    ```
 
-### 4. Custom Domain (Cloudflare DNS)
+### 4. Custom Domain (Hostinger DNS)
 
-1. In Vercel → Project → Domains, add `afriglobaltrade.com`.
-2. Vercel will show the required DNS records.
-3. In Cloudflare → DNS for `afriglobaltrade.com`, add:
-   - `CNAME @ → cname.vercel-dns.com` (or the A record Vercel specifies)
-   - Proxy status: **DNS only** (grey cloud) — Vercel handles SSL
-4. SSL auto-provisions via Vercel within ~60 seconds of DNS propagation.
-5. Update `NEXT_PUBLIC_SITE_URL` in Vercel env to `https://afriglobaltrade.com`.
-6. Update Supabase Auth redirect URLs to the custom domain.
-7. Redeploy for the env change to take effect.
+1. In Vercel → Project → Settings → Domains, add `afriglobaltrade.com`.
+   Vercel will display the required DNS record(s) — typically one of:
+   - `A @ 76.76.21.21` (Vercel IP), **or**
+   - `CNAME www → cname.vercel-dns.com`
+2. In Hostinger hPanel → Domains → DNS Zone Editor for `afriglobaltrade.com`:
+   - Add the A / CNAME records exactly as shown by Vercel.
+   - Do **not** proxy through any intermediary — Vercel handles SSL and CDN.
+3. SSL auto-provisions via Vercel's Let's Encrypt integration within ~60 seconds of DNS propagation.
+4. Update `NEXT_PUBLIC_SITE_URL` in Vercel env UI to `https://afriglobaltrade.com`.
+5. Update Supabase → Auth → URL Configuration:
+   - Site URL: `https://afriglobaltrade.com`
+   - Redirect URLs: `https://afriglobaltrade.com/auth/callback`
+6. Redeploy for the env change to take effect.
 
 ### 5. PostHog
 
@@ -91,9 +126,37 @@ Copy `.env.example` (if present) to `.env.local` and fill in values. This file i
 3. Host: `https://eu.posthog.com` → `NEXT_PUBLIC_POSTHOG_HOST`.
 4. Analytics only fires after cookie consent — verify in DevTools Network tab.
 
-### 6. Supabase Anti-Pause Cron
+### 6. Supabase Anti-Pause Cron (Hostinger)
 
-See `workers/supabase-ping/README.md` for the Cloudflare Worker setup that pings Supabase every 6 days to prevent auto-pause on the free tier.
+Supabase Free auto-pauses after 7 days of inactivity. Set up a cron job in Hostinger hPanel to ping it every 6 days.
+
+1. Hostinger hPanel → Advanced → Cron Jobs → Add New Cron Job.
+2. Schedule: `0 6 */6 * *` (06:00 UTC every 6 days).
+3. Command:
+   ```bash
+   curl -s -o /dev/null -H "apikey: <SUPABASE_ANON_KEY>" \
+     "https://<PROJECT_REF>.supabase.co/rest/v1/"
+   ```
+   Replace `<SUPABASE_ANON_KEY>` and `<PROJECT_REF>` with your actual values.
+   The `anon` key is safe to use here — it is already public in the browser bundle.
+
+**GitHub Actions fallback:** If Hostinger cron proves unreliable, add a scheduled workflow in `.github/workflows/supabase-ping.yml`:
+
+```yaml
+on:
+  schedule:
+    - cron: "0 6 */6 * *"
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -o /dev/null \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/rest/v1/"
+```
+
+Store `SUPABASE_ANON_KEY` and `SUPABASE_PROJECT_REF` as GitHub repository secrets.
 
 ---
 
@@ -164,9 +227,8 @@ No secrets are committed to the repository. `.env.local` is in `.gitignore`.
 - [ ] PWA installable (Chrome DevTools → Application → Manifest)
 - [ ] Offline read: cached chapter loads with network disabled
 - [ ] `afriglobaltrade.com` loads over HTTPS with valid cert
-- [ ] Supabase anti-pause Worker deployed and scheduled
+- [ ] Hostinger cron job configured (`0 6 */6 * *`, curl to Supabase REST)
 - [ ] Privacy Policy and Terms of Use linked from footer
-- [ ] Contact email placeholders (`privacy@eili.org`, `legal@eili.org`) replaced with real addresses
 - [ ] Legal review completed for Privacy Policy and Terms of Use
 - [ ] `NEXT_PUBLIC_SITE_URL` set to custom domain in Vercel
 - [ ] Supabase Auth redirect URLs updated to custom domain
