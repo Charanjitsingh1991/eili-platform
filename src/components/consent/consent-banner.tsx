@@ -33,7 +33,7 @@ export function ConsentBanner() {
     setConsentCookie(choice);
     setVisible(false);
     if (choice === "accepted") {
-      void initAnalytics();
+      initAnalytics();
     }
   }
 
