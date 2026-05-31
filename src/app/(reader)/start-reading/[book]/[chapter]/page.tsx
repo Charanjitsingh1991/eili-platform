@@ -34,9 +34,15 @@ export default async function ChapterPage({ params, searchParams }: Props) {
   const data = await getChapter(bookSlug, ordering);
   if (!data) notFound();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const isAuthenticated = !!user;
+  let isAuthenticated = false;
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthenticated = !!user;
+  } catch {
+    // Non-fatal — anonymous read still works
+    isAuthenticated = false;
+  }
 
   const isLite = modeParam === "lite";
   const altModeHref = isLite
