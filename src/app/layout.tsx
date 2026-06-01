@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Source_Serif_4, Inter } from "next/font/google";
+import dynamic from "next/dynamic";
 import "@/styles/globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ConsentBanner } from "@/components/consent/consent-banner";
+
+const AnalyticsInit = dynamic(
+  () => import("@/components/analytics/analytics-init").then((m) => m.AnalyticsInit),
+  { ssr: false },
+);
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
@@ -69,6 +75,7 @@ export default function RootLayout({
         </main>
         <Footer />
         <ConsentBanner />
+        <AnalyticsInit />
       </body>
     </html>
   );

@@ -1,43 +1,28 @@
 "use client";
 
-import posthog from "posthog-js";
-import { hasAnalyticsConsent } from "./consent";
+// posthog-js is initialised only in AnalyticsInit (loaded with ssr:false).
+// These stubs forward calls to window.posthog if it has been loaded.
 
-let initialized = false;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ph(): any {
+  return typeof window !== "undefined" ? (window as any).posthog : undefined;
+}
 
 export function initAnalytics(): void {
-  if (typeof window === "undefined") return;
-  if (initialized) return;
-  if (!hasAnalyticsConsent()) return;
-
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
-
-  if (!key || !host) return;
-
-  posthog.init(key, {
-    api_host: host,
-    capture_pageview: false,
-    persistence: "localStorage+cookie",
-  });
-
-  initialized = true;
+  // No-op — initialisation is handled by <AnalyticsInit /> (ssr:false)
 }
 
 export function captureEvent(
   event: string,
   properties?: Record<string, unknown>,
 ): void {
-  if (!initialized || !hasAnalyticsConsent()) return;
-  posthog.capture(event, properties);
+  ph()?.capture(event, properties);
 }
 
 export function identifyUser(userId: string): void {
-  if (!initialized || !hasAnalyticsConsent()) return;
-  posthog.identify(userId);
+  ph()?.identify(userId);
 }
 
 export function resetAnalytics(): void {
-  if (!initialized) return;
-  posthog.reset();
+  ph()?.reset();
 }
