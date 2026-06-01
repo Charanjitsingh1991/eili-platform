@@ -1,5 +1,5 @@
 import { marked } from "marked";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
 // Configure marked for clean, accessible output
 marked.setOptions({
@@ -9,13 +9,13 @@ marked.setOptions({
 
 /**
  * Parse and sanitize markdown → safe HTML string.
- * Server-safe: isomorphic-dompurify works in Node and the browser.
+ * Server-safe: sanitize-html is CJS-compatible and does not require jsdom.
  * This is the ONLY place in the codebase that produces HTML for dangerouslySetInnerHTML.
  */
 export function renderMarkdown(markdown: string): string {
   const raw = marked.parse(markdown) as string;
-  return DOMPurify.sanitize(raw, {
-    ALLOWED_TAGS: [
+  return sanitizeHtml(raw, {
+    allowedTags: [
       "h1","h2","h3","h4","h5","h6",
       "p","br","hr",
       "strong","em","s","code","pre","blockquote",
@@ -23,8 +23,9 @@ export function renderMarkdown(markdown: string): string {
       "table","thead","tbody","tr","th","td",
       "a",
     ],
-    ALLOWED_ATTR: ["href", "title", "rel", "target"],
-    FORCE_BODY: true,
+    allowedAttributes: {
+      a: ["href", "title", "rel", "target"],
+    },
   });
 }
 
