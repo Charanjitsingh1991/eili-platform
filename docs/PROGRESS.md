@@ -1,8 +1,9 @@
 # EILI Platform — Build Progress
 
-Live URL: https://eili-platform-b7jgw4cqq-developer-afris-projects.vercel.app  
+Live URL: **https://www.afriglobaltrade.com** (production domain, custom alias active)  
 GitHub: https://github.com/Charanjitsingh1991/eili-platform  
-Supabase project: `gwnqjltpbujqiwupousb`
+Supabase project: `gwnqjltpbujqiwupousb`  
+Last updated: 2026-06-01
 
 ---
 
@@ -129,7 +130,7 @@ Sections: Hero · Mission & Vision (quoted mission statement in callout) · Why 
 
 ### Packages added
 - `marked` 18 — markdown → HTML parsing
-- `isomorphic-dompurify` — server + client HTML sanitisation
+- `sanitize-html` — server-safe HTML sanitisation (CJS-compatible; replaced `isomorphic-dompurify` which caused ESM crash on Vercel — see Sprint S10)
 - `dotenv` (dev) — `.env.local` loading for standalone seed script
 
 ### Files created
@@ -138,7 +139,7 @@ Sections: Hero · Mission & Vision (quoted mission statement in callout) · Why 
 | `packages/db/seed.ts` | Upserts 1 level + 1 book + 3 chapters with realistic institutional prose |
 | `src/modules/content/domain/types.ts` | `Book`, `Chapter`, `ChapterSummary`, `BookWithChapters` types |
 | `src/modules/content/data/queries.ts` | `getPublishedBooks`, `getBookBySlug`, `getChapter` — Supabase queries with sibling prev/next lookup |
-| `src/modules/content/ui/markdown.tsx` | `renderMarkdown()` (marked → DOMPurify strict allowlist) + `SafeMarkdown` — **only** `dangerouslySetInnerHTML` site in codebase |
+| `src/modules/content/ui/markdown.tsx` | `renderMarkdown()` (marked → `sanitize-html` strict allowlist) + `SafeMarkdown` — **only** `dangerouslySetInnerHTML` site in codebase |
 
 ### Files modified
 | File | Change |
@@ -330,25 +331,104 @@ Footer already had `/privacy` and `/terms` links — no change needed.
 
 ---
 
+## Sprint S10 — Post-Launch Production Fixes ✅
+*Completed: 2026-06-01*
+
+### Root cause of all 500 errors on `/start-reading/*`
+
+Three independent issues stacked:
+
+| # | Problem | Fix |
+|---|---------|-----|
+| 1 | `isomorphic-dompurify` → `jsdom` 25+ is ESM-only; Vercel serverless uses CJS `require()` → `ERR_REQUIRE_ESM` crash on every server route | Replaced with `sanitize-html` (CJS-safe) in `src/modules/content/ui/markdown.tsx` |
+| 2 | `posthog-js` in the server bundle via `analytics.ts` static import; `detectStore()` runs at module load in Node (no `window`) → crash | Moved PostHog to `AnalyticsProvider` (`"use client"` + `dynamic(..., {ssr:false})`) — never runs on server |
+| 3 | `env.ts` required `DIRECT_URL` + `SUPABASE_SERVICE_ROLE_KEY` at boot; missing on Vercel → Zod throw on every request | Made optional in `src/lib/env.ts` |
+| 4 | Vercel `.vercel/` link missing — CLI deployed to orphaned preview URLs, never aliased to `afriglobaltrade.com` | Ran `vercel link`, then `vercel alias <url> afriglobaltrade.com` after each deploy |
+| 5 | Vercel-Supabase integration injected stale env vars for a different Supabase project | Removed old keys, re-added correct `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` via CLI |
+
+### Files changed
+| File | Change |
+|------|--------|
+| `src/modules/content/ui/markdown.tsx` | `isomorphic-dompurify` → `sanitize-html` |
+| `src/components/analytics/analytics-init.tsx` | New — dynamic `import('posthog-js')` inside `useEffect`, consent-gated |
+| `src/components/analytics/analytics-provider.tsx` | New — `"use client"` wrapper with `dynamic(..., {ssr:false})` |
+| `src/lib/analytics.ts` | Removed posthog static import; stubs forward to `window.posthog` |
+| `src/lib/env.ts` | `DIRECT_URL`, `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` → `.optional()` |
+| `src/app/layout.tsx` | Replaced inline `dynamic()` with `<AnalyticsProvider />` (Server Components cannot use `ssr:false`) |
+| `src/modules/reader/server/record-progress.ts` | `"use server"` scoped to mutation only; `getLastReadForBook` extracted to separate file |
+| `src/modules/reader/server/queries.ts` | New — `getLastReadForBook` as plain async function (no Server Action) |
+| `src/app/(reader)/start-reading/page.tsx` | Disabled `getLastReadForBook` call — returns `null` until schema is migrated |
+| `src/app/(reader)/start-reading/[book]/[chapter]/error.tsx` | New — error boundary to show message instead of blank 500 |
+| `package.json` / `pnpm-lock.yaml` | Added `sanitize-html` + `@types/sanitize-html`; removed `isomorphic-dompurify` |
+
+### Production verification (2026-06-01)
+| Route | HTTP Status |
+|-------|-------------|
+| `https://www.afriglobaltrade.com/` | ✅ 200 |
+| `https://www.afriglobaltrade.com/start-reading` | ✅ 200 |
+| `https://www.afriglobaltrade.com/start-reading/household-money-literacy` | ✅ 200 |
+| `https://www.afriglobaltrade.com/start-reading/household-money-literacy/1` | ✅ 200 |
+| `https://www.afriglobaltrade.com/start-reading/household-money-literacy/1?mode=lite` | ✅ 200 |
+| `/api/download/chapter/household-money-literacy/1` | ✅ 200 |
+| `pnpm build` | ✅ 0 errors |
+| `pnpm typecheck` | ✅ 0 errors |
+| Magic link email | ✅ Delivered to Primary inbox (SPF/DKIM/DMARC pass) |
+
+---
+
 ## Phase 1 — "When Done" Verification Checklist
 
 | Check | Status |
 |-------|--------|
 | Build: 0 errors, 0 warnings | ✅ 21 routes |
 | TypeScript strict: no errors | ✅ |
-| Lighthouse mobile perf ≥90 | ⏳ Run manually |
-| Lighthouse a11y ≥95 | ⏳ Run manually |
-| Lighthouse best-practices ≥95 | ⏳ Run manually |
-| Lighthouse SEO ≥95 | ⏳ Run manually |
-| Axe: 0 violations | ⏳ Run manually |
-| PostHog: 0 events before consent click | ✅ Consent gate in code; verify in DevTools Network |
-| PWA installable (manifest + icons) | ✅ Manifest shipped; SW deferred — see ADR |
-| Lite chapter ≤50 KB | ⏳ Verify in DevTools |
-| `afriglobaltrade.com` loads over HTTPS | ⏳ DNS config manual |
-| Supabase anti-pause Worker deployed | ⏳ `wrangler deploy` manual |
+| All server routes return 200 in production | ✅ Confirmed 2026-06-01 |
+| Magic link auth working | ✅ Confirmed — lands in Primary inbox |
+| `afriglobaltrade.com` loads over HTTPS | ✅ Live |
 | Privacy Policy + Terms linked from footer | ✅ |
-| All deviations in adr-notes.md | ✅ 8 entries |
+| All deviations in adr-notes.md | ✅ 8+ entries |
 | Secrets inventory in deployment.md | ✅ |
 | Google OAuth decision documented | ✅ Deferred Phase 2 |
 | JSON-LD Book schema | ✅ |
 | `proxy.ts` rename complete | ✅ |
+| PostHog never loads before consent | ✅ Code confirmed; verify in DevTools Network tab |
+| PWA installable (manifest + icons) | ✅ Manifest shipped; SW deferred — see ADR |
+| Lighthouse mobile perf ≥90 | ⏳ Re-run — PostHog now deferred, score expected to improve |
+| Lighthouse a11y ≥95 | ⏳ Re-run on production |
+| Lighthouse best-practices ≥95 | ⏳ Re-run on production |
+| Lighthouse SEO ≥95 | ⏳ Re-run on production |
+| Axe: 0 violations | ⏳ Run `pnpm test:e2e` against production URL |
+| Lite chapter ≤50 KB transferred | ⏳ Verify in DevTools Network (cache disabled, Fast 3G) |
+| Standard chapter ≤250 KB transferred | ⏳ Verify in DevTools Network |
+| Supabase keepalive Worker deployed | ⏳ Run `wrangler deploy` from `workers/supabase-ping/` |
+| GitHub → Vercel auto-deploy connected | ⏳ Fix in Vercel Dashboard → Settings → Git |
+
+---
+
+## Pending / Known Issues
+
+### 🔴 Must fix before promoting to the real EILI domain
+
+| Issue | Detail |
+|-------|--------|
+| **GitHub → Vercel auto-deploy not working** | Pushes to `main` don't trigger production deploy. Each deploy requires `npx vercel --prod` + `npx vercel alias <url> afriglobaltrade.com` manually. **Fix:** Vercel Dashboard → Project → Settings → Git → confirm Production Branch = `main` and GitHub repo is connected. |
+| **`chapter_progress` schema mismatch** | DB has old schema (`reader_session_id`, `percent_complete`, `completed_at`). App writes `profile_id`, `book_id`, `last_read_at`, `completed`. Server-side progress tracking is **silently disabled** (`null` passed to `ContinueCard`). Write and apply a new Drizzle migration to add missing columns before re-enabling. |
+
+### 🟡 Should fix before first public traffic
+
+| Issue | Detail |
+|-------|--------|
+| **Supabase keepalive Worker not deployed** | `workers/supabase-ping/` is built but not deployed. Without it, Supabase free tier auto-pauses after 7 days of inactivity. Run `wrangler deploy` from that folder. |
+| **Placeholder emails in legal pages** | `privacy@eili.org`, `legal@eili.org` in Privacy Policy and Terms are placeholders. Replace with real Hostinger inboxes (`privacy@afriglobaltrade.com` etc.) before public launch. |
+| **Legal review** | Privacy Policy and Terms of Use have an amber "subject to legal review" banner — complete the review before launch. |
+| **Sentry not set up** | Deferred per ADR. Add Sentry DSN env var and initialise before first public traffic. |
+
+### 🟢 Nice to have / Phase 2
+
+| Issue | Detail |
+|-------|--------|
+| **Lighthouse perf score** | Last measured: 78/100 (homepage, before PostHog fix). PostHog is now deferred-loaded — re-run to confirm ≥90. |
+| **Service Worker (offline cache)** | `@serwist/next` is incompatible with Next 16 Turbopack. Revisit when `@serwist/turbopack` stabilises. |
+| **`chapter_progress` migration** | Write migration to add `profile_id`, `book_id`, `last_read_at`, `completed` columns; re-enable `getLastReadForBook` in `/start-reading` page. |
+| **Google OAuth** | Deferred Phase 2 — requires Google verified consent screen review (days–weeks). |
+| **Bundle budget verification** | Confirm Lite chapter ≤50 KB and Standard ≤250 KB in Chrome DevTools with cache disabled and Fast 3G throttling. |
