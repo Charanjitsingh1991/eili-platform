@@ -11,10 +11,19 @@ export async function getLastReadForBook(
 
   if (!user) return null;
 
+  // profiles.id (PK) ≠ auth.uid() — look up the profile row first
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!profile) return null;
+
   const { data, error } = await supabase
     .from("chapter_progress")
     .select("chapter_id, chapters(ordering)")
-    .eq("profile_id", user.id)
+    .eq("profile_id", profile.id)
     .eq("book_id", bookId)
     .order("last_read_at", { ascending: false })
     .limit(1)

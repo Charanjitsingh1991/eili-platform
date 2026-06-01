@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Monitor, Zap, Download, BookOpen, BarChart2, RotateCcw } from "lucide-react";
-import { ContinueCard } from "@/modules/reader/public";
+import { ContinueCard, getLastReadForBook } from "@/modules/reader/public";
+import { getBookBySlug } from "@/modules/content/public";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Start Reading",
@@ -60,7 +62,20 @@ const actionTools = [
 ];
 
 export default async function StartReadingPage() {
-  const serverOrdering = null; // progress sync re-enabled after schema migration
+  const book = await getBookBySlug(BOOK_SLUG);
+  let serverOrdering: number | null = null;
+  if (book) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const progress = await getLastReadForBook(book.id);
+        serverOrdering = progress?.ordering ?? null;
+      }
+    } catch {
+      // Non-fatal — anonymous read still works without progress
+    }
+  }
 
   return (
     <>

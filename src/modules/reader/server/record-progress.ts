@@ -15,10 +15,19 @@ export async function recordChapterProgress(
 
   if (!user) return; // anonymous — caller handles IndexedDB
 
+  // profiles.id (PK) ≠ auth.uid() — look up the profile row first
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!profile) return; // user exists in auth but has no profile yet
+
   // Upsert: one row per (profile_id, chapter_id), update read_at on re-read
   const { error } = await supabase.from("chapter_progress").upsert(
     {
-      profile_id: user.id,
+      profile_id: profile.id,
       chapter_id: chapterId,
       book_id: bookId,
       completed: true,

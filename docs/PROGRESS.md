@@ -320,13 +320,15 @@ Footer already had `/privacy` and `/terms` links — no change needed.
 | `workers/supabase-ping/index.js` | Cloudflare Worker — scheduled `fetch` to Supabase REST health endpoint |
 | `workers/supabase-ping/wrangler.toml` | Cron: `0 0 */6 * *` (every 6 days). Deploy: `wrangler secret put SUPABASE_URL && wrangler secret put SUPABASE_ANON_KEY && wrangler deploy` |
 
+> **REVISED 2026-06-01** — Cloudflare dropped. `workers/supabase-ping/` directory deleted in the consolidation commit. Supabase keepalive now runs as a Hostinger hPanel cron job; see `docs/deployment.md` §6.
+
 **Remaining manual steps:**
-1. Cloudflare DNS: add CNAME `@` → Vercel DNS value for `afriglobaltrade.com`
-2. Vercel: add custom domain, wait for SSL provisioning
-3. Update `NEXT_PUBLIC_SITE_URL` in Vercel env to `https://afriglobaltrade.com`
+1. ~~Cloudflare DNS: add CNAME `@` → Vercel DNS value for `afriglobaltrade.com`~~ → **Hostinger DNS Zone Editor: CNAME/A → Vercel** ✅ Done
+2. Vercel: add custom domain, wait for SSL provisioning ✅ Done
+3. Update `NEXT_PUBLIC_SITE_URL` in Vercel env to `https://afriglobaltrade.com` ✅ Done
 4. Update Supabase Auth → URL Configuration → Site URL + Redirect URLs
-5. Deploy Cloudflare Worker: `wrangler deploy` from `workers/supabase-ping/`
-6. Replace placeholder emails (`privacy@eili.org`, `legal@eili.org`) before public launch
+5. ~~Deploy Cloudflare Worker: `wrangler deploy` from `workers/supabase-ping/`~~ → **Hostinger hPanel → Advanced → Cron Jobs: `0 6 */6 * * curl <SUPABASE_REST_URL>`**
+6. ~~Replace placeholder emails (`privacy@eili.org`, `legal@eili.org`) before public launch~~ ✅ Fixed in consolidation commit
 7. Legal review of Privacy Policy and Terms of Use
 
 ---
@@ -357,7 +359,7 @@ Three independent issues stacked:
 | `src/app/layout.tsx` | Replaced inline `dynamic()` with `<AnalyticsProvider />` (Server Components cannot use `ssr:false`) |
 | `src/modules/reader/server/record-progress.ts` | `"use server"` scoped to mutation only; `getLastReadForBook` extracted to separate file |
 | `src/modules/reader/server/queries.ts` | New — `getLastReadForBook` as plain async function (no Server Action) |
-| `src/app/(reader)/start-reading/page.tsx` | Disabled `getLastReadForBook` call — returns `null` until schema is migrated |
+| `src/app/(reader)/start-reading/page.tsx` | Disabled `getLastReadForBook` call (returns `null`) until schema migrated — re-enabled in Sprint S11 |
 | `src/app/(reader)/start-reading/[book]/[chapter]/error.tsx` | New — error boundary to show message instead of blank 500 |
 | `package.json` / `pnpm-lock.yaml` | Added `sanitize-html` + `@types/sanitize-html`; removed `isomorphic-dompurify` |
 
@@ -373,6 +375,46 @@ Three independent issues stacked:
 | `pnpm build` | ✅ 0 errors |
 | `pnpm typecheck` | ✅ 0 errors |
 | Magic link email | ✅ Delivered to Primary inbox (SPF/DKIM/DMARC pass) |
+
+---
+
+## Sprint S11 — chapter_progress migration + progress resume ✅
+*Completed: 2026-06-01*
+
+### What was done
+The `chapter_progress` table had an old schema incompatible with the app's queries. Migration `0002` adds the missing columns without touching existing rows.
+
+#### Migration SQL — `packages/db/migrations/0002_chapter_progress_profile_columns.sql`
+```sql
+ALTER TABLE "chapter_progress"
+  ADD COLUMN IF NOT EXISTS "profile_id"   uuid        REFERENCES "profiles"("id") ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS "book_id"      uuid        REFERENCES "books"("id")    ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS "last_read_at" timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS "completed"    boolean     NOT NULL DEFAULT false;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "chapter_progress_profile_chapter_uidx"
+  ON "chapter_progress" ("profile_id", "chapter_id")
+  WHERE "profile_id" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "chapter_progress_profile_book_idx"
+  ON "chapter_progress" ("profile_id", "book_id", "last_read_at" DESC)
+  WHERE "profile_id" IS NOT NULL;
+```
+RLS policies on `chapter_progress` replaced: old policies joined through `reader_sessions` (anonymous path only). New policies use direct `profile_id` ownership for authenticated users while keeping the legacy `reader_session_id` path for anonymous rows.
+
+### Files changed
+| File | Change |
+|------|--------|
+| `packages/db/migrations/0002_chapter_progress_profile_columns.sql` | New — adds `profile_id`, `book_id`, `last_read_at`, `completed`, unique index, updated RLS |
+| `scripts/apply-migration-0002.ts` | New — applies migration 0002 via `postgres` driver (same pattern as `apply-rls.ts`) |
+| `src/modules/reader/server/queries.ts` | Fixed `getLastReadForBook` — now looks up `profiles.id` via `user_id` before querying `chapter_progress` |
+| `src/modules/reader/server/record-progress.ts` | Fixed `recordChapterProgress` — same `profiles.id` lookup before upsert |
+| `src/app/(reader)/start-reading/page.tsx` | Re-enabled `getLastReadForBook` — passes real `serverOrdering` to `ContinueCard` for authenticated users |
+
+### Manual test required
+1. Open `https://www.afriglobaltrade.com/start-reading/household-money-literacy/1` in incognito
+2. Sign in via magic link → read a chapter → navigate to `/start-reading`
+3. Confirm `ContinueCard` shows the chapter you read
 
 ---
 
@@ -400,7 +442,9 @@ Three independent issues stacked:
 | Axe: 0 violations | ⏳ Run `pnpm test:e2e` against production URL |
 | Lite chapter ≤50 KB transferred | ⏳ Verify in DevTools Network (cache disabled, Fast 3G) |
 | Standard chapter ≤250 KB transferred | ⏳ Verify in DevTools Network |
-| Supabase keepalive Worker deployed | ⏳ Run `wrangler deploy` from `workers/supabase-ping/` |
+| `chapter_progress` schema migration applied | ✅ Migration 0002 applied 2026-06-01 |
+| Progress resume (`ContinueCard`) re-enabled | ✅ `getLastReadForBook` live; manual E2E test required |
+| Hostinger cron for Supabase keepalive scheduled | ⏳ Hostinger hPanel → Advanced → Cron Jobs: `0 6 */6 * * curl <SUPABASE_REST_URL>` |
 | GitHub → Vercel auto-deploy connected | ⏳ Fix in Vercel Dashboard → Settings → Git |
 
 ---
@@ -411,24 +455,22 @@ Three independent issues stacked:
 
 | Issue | Detail |
 |-------|--------|
-| **GitHub → Vercel auto-deploy not working** | Pushes to `main` don't trigger production deploy. Each deploy requires `npx vercel --prod` + `npx vercel alias <url> afriglobaltrade.com` manually. **Fix:** Vercel Dashboard → Project → Settings → Git → confirm Production Branch = `main` and GitHub repo is connected. |
-| **`chapter_progress` schema mismatch** | DB has old schema (`reader_session_id`, `percent_complete`, `completed_at`). App writes `profile_id`, `book_id`, `last_read_at`, `completed`. Server-side progress tracking is **silently disabled** (`null` passed to `ContinueCard`). Write and apply a new Drizzle migration to add missing columns before re-enabling. |
+| **GitHub → Vercel auto-deploy not working** | Pushes to `main` don't trigger a production deploy. Each deploy requires `npx vercel --prod` + `npx vercel alias <url> afriglobaltrade.com` manually. **Fix:** Vercel Dashboard → Project → Settings → Git → confirm Production Branch = `main` and GitHub repo is connected. |
 
 ### 🟡 Should fix before first public traffic
 
 | Issue | Detail |
 |-------|--------|
-| **Supabase keepalive Worker not deployed** | `workers/supabase-ping/` is built but not deployed. Without it, Supabase free tier auto-pauses after 7 days of inactivity. Run `wrangler deploy` from that folder. |
-| **Placeholder emails in legal pages** | `privacy@eili.org`, `legal@eili.org` in Privacy Policy and Terms are placeholders. Replace with real Hostinger inboxes (`privacy@afriglobaltrade.com` etc.) before public launch. |
-| **Legal review** | Privacy Policy and Terms of Use have an amber "subject to legal review" banner — complete the review before launch. |
+| **Supabase keepalive Hostinger cron not yet scheduled** | Supabase free tier auto-pauses after 7 days of inactivity. Schedule via Hostinger hPanel → Advanced → Cron Jobs: `0 6 */6 * *` → `curl https://gwnqjltpbujqiwupousb.supabase.co/rest/v1/`. See `docs/deployment.md` §6. |
+| **Legal review** | Privacy Policy and Terms of Use carry an amber "subject to legal review" banner — complete before public launch. |
 | **Sentry not set up** | Deferred per ADR. Add Sentry DSN env var and initialise before first public traffic. |
+| **Progress resume E2E test** | Manual test required: incognito → magic link sign-in → read chapter → navigate to `/start-reading` → confirm `ContinueCard` shows chapter. |
 
 ### 🟢 Nice to have / Phase 2
 
 | Issue | Detail |
 |-------|--------|
-| **Lighthouse perf score** | Last measured: 78/100 (homepage, before PostHog fix). PostHog is now deferred-loaded — re-run to confirm ≥90. |
-| **Service Worker (offline cache)** | `@serwist/next` is incompatible with Next 16 Turbopack. Revisit when `@serwist/turbopack` stabilises. |
-| **`chapter_progress` migration** | Write migration to add `profile_id`, `book_id`, `last_read_at`, `completed` columns; re-enable `getLastReadForBook` in `/start-reading` page. |
+| **Lighthouse perf score** | Last measured: 78/100 (homepage, before PostHog fix). PostHog now deferred-loaded — re-run to confirm ≥90. |
+| **Service Worker (offline cache)** | `@serwist/next` incompatible with Next 16 Turbopack. Revisit when `@serwist/turbopack` stabilises. |
 | **Google OAuth** | Deferred Phase 2 — requires Google verified consent screen review (days–weeks). |
 | **Bundle budget verification** | Confirm Lite chapter ≤50 KB and Standard ≤250 KB in Chrome DevTools with cache disabled and Fast 3G throttling. |
