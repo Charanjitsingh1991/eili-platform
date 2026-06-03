@@ -2,6 +2,8 @@
 
 **Economic & Industrial Literacy Institute** — a mobile-first, low-bandwidth financial literacy and planning web app.
 
+<!-- auto-deploy test 2026-06-03 -->
+
 ## Quick Start
 
 ### Prerequisites
