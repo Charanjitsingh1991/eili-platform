@@ -321,14 +321,14 @@ Footer already had `/privacy` and `/terms` links — no change needed.
 | `workers/supabase-ping/index.js` | Cloudflare Worker — scheduled `fetch` to Supabase REST health endpoint |
 | `workers/supabase-ping/wrangler.toml` | Cron: `0 0 */6 * *` (every 6 days). Deploy: `wrangler secret put SUPABASE_URL && wrangler secret put SUPABASE_ANON_KEY && wrangler deploy` |
 
-> **REVISED 2026-06-01** — Cloudflare dropped. `workers/supabase-ping/` directory deleted in the consolidation commit. Supabase keepalive now runs as a Hostinger hPanel cron job; see `docs/deployment.md` §6.
+> **REVISED 2026-06-01** — Cloudflare dropped. `workers/supabase-ping/` directory deleted in the consolidation commit. Supabase keepalive now runs on **cron-job.org** (not Hostinger cron, not Cloudflare); see `docs/deployment.md` §6.
 
 **Remaining manual steps:**
 1. ~~Cloudflare DNS: add CNAME `@` → Vercel DNS value for `afriglobaltrade.com`~~ → **Hostinger DNS Zone Editor: CNAME/A → Vercel** ✅ Done
 2. Vercel: add custom domain, wait for SSL provisioning ✅ Done
 3. Update `NEXT_PUBLIC_SITE_URL` in Vercel env to `https://afriglobaltrade.com` ✅ Done
 4. Update Supabase Auth → URL Configuration → Site URL + Redirect URLs
-5. ~~Deploy Cloudflare Worker: `wrangler deploy` from `workers/supabase-ping/`~~ → **Hostinger hPanel → Advanced → Cron Jobs: `0 6 */6 * * curl <SUPABASE_REST_URL>`**
+5. ~~Deploy Cloudflare Worker: `wrangler deploy` from `workers/supabase-ping/`~~ → **Supabase keepalive: scheduled on cron-job.org (`0 6 */6 * *` → Supabase REST root, with anon key)**
 6. ~~Replace placeholder emails (`privacy@eili.org`, `legal@eili.org`) before public launch~~ ✅ Fixed in consolidation commit
 7. Legal review of Privacy Policy and Terms of Use
 

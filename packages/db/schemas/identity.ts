@@ -21,10 +21,13 @@ export const literacyAssessmentEnum = pgEnum("literacy_assessment", [
 export const profiles = pgTable("profiles", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().unique(),
-  displayName: text("display_name").notNull(),
-  countryIso2: text("country_iso2").notNull(),
-  category: categoryEnum("category").notNull(),
+  displayName: text("display_name"),
+  countryIso2: text("country_iso2"),
+  category: categoryEnum("category"),
   literacySelfAssessment: literacyAssessmentEnum("literacy_self_assessment"),
+  onboardingCompletedAt: timestamp("onboarding_completed_at", {
+    withTimezone: true,
+  }),
   consents: jsonb("consents").$type<{
     terms?: boolean;
     termsVersion?: string;

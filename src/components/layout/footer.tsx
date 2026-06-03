@@ -26,9 +26,11 @@ export function Footer() {
       {/* Main footer grid */}
       <div className="mx-auto max-w-6xl px-4 py-12">
         {/* Desktop: 4 columns | Mobile: stacked */}
+        {/* Mobile: Identity → Actions → Navigation → Legal
+            Desktop: Identity | Navigation | Actions | Legal (4-col grid) */}
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
-          {/* Zone 1 — Identity */}
-          <div className="md:col-span-1">
+          {/* Zone 1 — Identity (mobile order 1, desktop col 1) */}
+          <div className="order-1 md:col-span-1">
             <p className="mb-2 font-serif text-base font-semibold text-ink">
               Economic &amp; Industrial Literacy Institute (EILI)
             </p>
@@ -40,27 +42,8 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Zone 2 — Navigation */}
-          <div>
-            <p className="mb-3 font-sans text-xs font-semibold uppercase tracking-wider text-ink">
-              Navigation
-            </p>
-            <ul className="space-y-2">
-              {navLinks.map(({ href, label }) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className="font-sans text-sm text-ink-secondary transition-colors hover:text-ink focus-ring rounded-input"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Zone 3 — Actions */}
-          <div>
+          {/* Zone 3 — Actions (mobile order 2, desktop col 3) */}
+          <div className="order-2 md:order-3">
             <p className="mb-3 font-sans text-xs font-semibold uppercase tracking-wider text-ink">
               Get Started
             </p>
@@ -78,8 +61,27 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Zone 4 — Trust & Legal */}
-          <div>
+          {/* Zone 2 — Navigation (mobile order 3, desktop col 2) */}
+          <div className="order-3 md:order-2">
+            <p className="mb-3 font-sans text-xs font-semibold uppercase tracking-wider text-ink">
+              Navigation
+            </p>
+            <ul className="space-y-2">
+              {navLinks.map(({ href, label }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="font-sans text-sm text-ink-secondary transition-colors hover:text-ink focus-ring rounded-input"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Zone 4 — Trust & Legal (mobile order 4, desktop col 4) */}
+          <div className="order-4">
             <p className="mb-3 font-sans text-xs font-semibold uppercase tracking-wider text-ink">
               Legal
             </p>

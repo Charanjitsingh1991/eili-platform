@@ -3,6 +3,20 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const ANON_COOKIE = "eili_anon_session_id";
 
+// Routes that bypass the onboarding redirect even for signed-in users
+const ONBOARDING_BYPASS = [
+  "/",
+  "/privacy",
+  "/terms",
+  "/account/onboarding",
+];
+const ONBOARDING_BYPASS_PREFIXES = ["/auth/", "/_next/", "/api/"];
+
+function shouldBypassOnboarding(pathname: string): boolean {
+  if (ONBOARDING_BYPASS.includes(pathname)) return true;
+  return ONBOARDING_BYPASS_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -44,7 +58,24 @@ export async function proxy(request: NextRequest) {
       },
     });
 
-    await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Onboarding gate: signed-in user with no completed profile → redirect
+    if (user && !shouldBypassOnboarding(request.nextUrl.pathname)) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!profile?.onboarding_completed_at) {
+        const onboardingUrl = request.nextUrl.clone();
+        onboardingUrl.pathname = "/account/onboarding";
+        return NextResponse.redirect(onboardingUrl);
+      }
+    }
   }
 
   if (!request.cookies.get(ANON_COOKIE)) {
