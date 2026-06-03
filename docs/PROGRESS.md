@@ -1,9 +1,10 @@
 # EILI Platform — Build Progress
 
-Live URL: **https://www.afriglobaltrade.com** (production domain, custom alias active)  
+Live URL: **https://eili-platform.vercel.app** (Vercel subdomain — permanent free URL)  
+Email sending: `auth@afriglobaltrade.com` via Resend (domain retained for email only)  
 GitHub: https://github.com/Charanjitsingh1991/eili-platform  
 Supabase project: `gwnqjltpbujqiwupousb`  
-Last updated: 2026-06-01
+Last updated: 2026-06-03
 
 ---
 

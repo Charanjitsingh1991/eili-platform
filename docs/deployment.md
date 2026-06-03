@@ -22,7 +22,7 @@ Set these in Vercel → Project → Settings → Environment Variables (all envi
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Secret — never expose client-side |
 | `DATABASE_URL` | ✅ | Pooled connection string (Supabase → Connect → Connection pooling) |
 | `DIRECT_URL` | ✅ | Direct connection string (used by Drizzle migrations) |
-| `NEXT_PUBLIC_SITE_URL` | ✅ | `https://afriglobaltrade.com` in prod; `http://localhost:3000` in dev |
+| `NEXT_PUBLIC_SITE_URL` | ✅ | `https://eili-platform.vercel.app` in prod; `http://localhost:3000` in dev |
 | `RESEND_API_KEY` | ✅ for email | From Resend dashboard |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Optional | From PostHog project settings |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Optional | `https://eu.posthog.com` |
@@ -50,8 +50,8 @@ Copy `.env.example` (if present) to `.env.local` and fill in values. This file i
    ```
 6. Enable Email magic link in Supabase → Auth → Providers → Email.
 7. Set Site URL in Supabase → Auth → URL Configuration:
-   - Site URL: `https://afriglobaltrade.com`
-   - Redirect URLs: `https://afriglobaltrade.com/auth/callback`
+   - Site URL: `https://eili-platform.vercel.app`
+   - Redirect URLs: `https://eili-platform.vercel.app/auth/callback`
 
 ### 2. Email setup (Hostinger mailboxes + Resend sending)
 
@@ -103,21 +103,18 @@ In Supabase → Authentication → Email → SMTP Settings:
    vercel --prod
    ```
 
-### 4. Custom Domain (Hostinger DNS)
+### 4. Domain
 
-1. In Vercel → Project → Settings → Domains, add `afriglobaltrade.com`.
-   Vercel will display the required DNS record(s) — typically one of:
-   - `A @ 76.76.21.21` (Vercel IP), **or**
-   - `CNAME www → cname.vercel-dns.com`
-2. In Hostinger hPanel → Domains → DNS Zone Editor for `afriglobaltrade.com`:
-   - Add the A / CNAME records exactly as shown by Vercel.
-   - Do **not** proxy through any intermediary — Vercel handles SSL and CDN.
-3. SSL auto-provisions via Vercel's Let's Encrypt integration within ~60 seconds of DNS propagation.
-4. Update `NEXT_PUBLIC_SITE_URL` in Vercel env UI to `https://afriglobaltrade.com`.
-5. Update Supabase → Auth → URL Configuration:
-   - Site URL: `https://afriglobaltrade.com`
-   - Redirect URLs: `https://afriglobaltrade.com/auth/callback`
-6. Redeploy for the env change to take effect.
+The app is served from the free Vercel subdomain — no custom domain required.
+
+- **Production URL:** `https://eili-platform.vercel.app`
+- Update `NEXT_PUBLIC_SITE_URL` in Vercel env UI to `https://eili-platform.vercel.app`.
+- Update Supabase → Auth → URL Configuration:
+  - Site URL: `https://eili-platform.vercel.app`
+  - Redirect URLs: `https://eili-platform.vercel.app/auth/callback`
+- Redeploy for the env change to take effect.
+
+> **Note on `afriglobaltrade.com`:** This domain is retained **for email only** (Resend verified sending domain, Hostinger inboxes). It is no longer the web URL. If the project receives a dedicated EILI domain in future, repeat the Resend domain verification and Supabase URL steps for that domain.
 
 ### 5. PostHog
 
@@ -226,11 +223,11 @@ No secrets are committed to the repository. `.env.local` is in `.gitignore`.
 - [ ] PostHog fires 0 events before consent click (DevTools Network)
 - [ ] PWA installable (Chrome DevTools → Application → Manifest)
 - [ ] Offline read: cached chapter loads with network disabled
-- [ ] `afriglobaltrade.com` loads over HTTPS with valid cert
+- [ ] `https://eili-platform.vercel.app` loads over HTTPS (Vercel default — always valid)
 - [ ] Hostinger cron job configured (`0 6 */6 * *`, curl to Supabase REST)
 - [ ] Privacy Policy and Terms of Use linked from footer
 - [ ] Legal review completed for Privacy Policy and Terms of Use
-- [ ] `NEXT_PUBLIC_SITE_URL` set to custom domain in Vercel
-- [ ] Supabase Auth redirect URLs updated to custom domain
+- [ ] `NEXT_PUBLIC_SITE_URL` set to `https://eili-platform.vercel.app` in Vercel
+- [ ] Supabase Auth redirect URLs updated to `https://eili-platform.vercel.app`
 - [ ] All deviations documented in `docs/adr-notes.md`
 - [ ] Sentry added before first public traffic
