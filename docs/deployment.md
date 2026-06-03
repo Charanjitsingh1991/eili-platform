@@ -22,7 +22,7 @@ Set these in Vercel → Project → Settings → Environment Variables (all envi
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Secret — never expose client-side |
 | `DATABASE_URL` | ✅ | Pooled connection string (Supabase → Connect → Connection pooling) |
 | `DIRECT_URL` | ✅ | Direct connection string (used by Drizzle migrations) |
-| `NEXT_PUBLIC_SITE_URL` | ✅ | `https://eili-platform.vercel.app` in prod; `http://localhost:3000` in dev |
+| `NEXT_PUBLIC_SITE_URL` | ✅ | `https://eili-platform-nine.vercel.app` in prod; `http://localhost:3000` in dev |
 | `RESEND_API_KEY` | ✅ for email | From Resend dashboard |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Optional | From PostHog project settings |
 | `NEXT_PUBLIC_POSTHOG_HOST` | Optional | `https://eu.posthog.com` |
@@ -50,8 +50,8 @@ Copy `.env.example` (if present) to `.env.local` and fill in values. This file i
    ```
 6. Enable Email magic link in Supabase → Auth → Providers → Email.
 7. Set Site URL in Supabase → Auth → URL Configuration:
-   - Site URL: `https://eili-platform.vercel.app`
-   - Redirect URLs: `https://eili-platform.vercel.app/auth/callback`
+   - Site URL: `https://eili-platform-nine.vercel.app`
+   - Redirect URLs: `https://eili-platform-nine.vercel.app/auth/callback`
 
 ### 2. Email setup (Hostinger mailboxes + Resend sending)
 
@@ -107,14 +107,14 @@ In Supabase → Authentication → Email → SMTP Settings:
 
 The app is served from the free Vercel subdomain — no custom domain required.
 
-- **Production URL:** `https://eili-platform.vercel.app`
-- Update `NEXT_PUBLIC_SITE_URL` in Vercel env UI to `https://eili-platform.vercel.app`.
+- **Production URL:** `https://eili-platform-nine.vercel.app`
+- Update `NEXT_PUBLIC_SITE_URL` in Vercel env UI to `https://eili-platform-nine.vercel.app`.
 - Update Supabase → Auth → URL Configuration:
-  - Site URL: `https://eili-platform.vercel.app`
-  - Redirect URLs: `https://eili-platform.vercel.app/auth/callback`
+  - Site URL: `https://eili-platform-nine.vercel.app`
+  - Redirect URLs: `https://eili-platform-nine.vercel.app/auth/callback`
 - Redeploy for the env change to take effect.
 
-> **Note on `afriglobaltrade.com`:** This domain is retained **for email only** (Resend verified sending domain, Hostinger inboxes). It is no longer the web URL. If the project receives a dedicated EILI domain in future, repeat the Resend domain verification and Supabase URL steps for that domain.
+> **Note on `afriglobaltrade.com`:** This domain is retained **for email only** (Resend verified sending domain, Hostinger inboxes). It is no longer the web URL. If the project receives a dedicated EILI domain in future: (1) add it to Vercel Dashboard → Settings → Domains, (2) update `NEXT_PUBLIC_SITE_URL`, (3) update Supabase Auth redirect URLs, (4) re-verify the new domain in Resend.
 
 ### 5. PostHog
 
@@ -223,11 +223,11 @@ No secrets are committed to the repository. `.env.local` is in `.gitignore`.
 - [ ] PostHog fires 0 events before consent click (DevTools Network)
 - [ ] PWA installable (Chrome DevTools → Application → Manifest)
 - [ ] Offline read: cached chapter loads with network disabled
-- [ ] `https://eili-platform.vercel.app` loads over HTTPS (Vercel default — always valid)
+- [ ] `https://eili-platform-nine.vercel.app` loads over HTTPS (Vercel default — always valid)
 - [ ] Hostinger cron job configured (`0 6 */6 * *`, curl to Supabase REST)
 - [ ] Privacy Policy and Terms of Use linked from footer
 - [ ] Legal review completed for Privacy Policy and Terms of Use
-- [ ] `NEXT_PUBLIC_SITE_URL` set to `https://eili-platform.vercel.app` in Vercel
-- [ ] Supabase Auth redirect URLs updated to `https://eili-platform.vercel.app`
+- [ ] `NEXT_PUBLIC_SITE_URL` set to `https://eili-platform-nine.vercel.app` in Vercel ✅ Done
+- [ ] Supabase Auth redirect URLs updated to `https://eili-platform-nine.vercel.app`
 - [ ] All deviations documented in `docs/adr-notes.md`
 - [ ] Sentry added before first public traffic
